@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+ 
+<html>
+ 
+<head>
+ 
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+ 
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+ 
+<title>Google Maps JavaScript API v3 Example: Marker Simple</title>
+ 
+<link href="http://code.google.com/apis/maps/documentation/javascript/examples/default.css" rel="stylesheet" type="text/css" />
+ 
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+ 
+<script type="text/javascript">
+ var pointArray=[];
+ var map;
+  function initialize() {
+ 
+    var myLatlng = new google.maps.LatLng(-25.363882,131.044922);
+ 
+    var myOptions = {
+ 
+      zoom: 4,
+ 
+      center: myLatlng,
+ 
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+ 
+    }
+ 
+     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+ 
+     
+ 
+    
+ 
+  }
+ 
+</script>
+ 
+</head>
+ 
+<body onload="initialize()">
+ 
+  <div id="map_canvas" style="width:80%;height: 80%"></div>
+  <@gis siteid="${site.id}";ll> 
+		 <script type="text/javascript">
+		 var ll=new google.maps.LatLng(${ll.lat},${ll.lng});
+		 pointArray.push(ll);
+		 </script>
+    </@gis>
+  <input type="button" value="showMarkers()" onclick="showMarkers()"/>
+</body>
+ <script type="text/javascript">
+ function showMarkers()
+ {
+    for(var i=0;i<pointArray.length;i++)
+    {
+    	var marker = new google.maps.Marker({
+ 
+        position: pointArray[i],
+ 
+        map: map,
+ 
+        title:"Hello World!"
+ 
+    });  
+    }
+  
+ }
+ </script>
+</html>

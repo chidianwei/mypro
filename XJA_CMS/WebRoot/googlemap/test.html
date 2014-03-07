@@ -1,0 +1,259 @@
+
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+ <script type="text/javascript" src="http://www.ip-look-up.com/Services/ipInfo.js"></script> 
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+ <script src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/routeboxer/src/RouteBoxer.js" type="text/javascript"></script>
+
+
+<SCRIPT language=JScript event=OnObjectReady(objObject,objAsyncContext) for=foo>
+   if(objObject.IPEnabled != null && objObject.IPEnabled != "undefined" && objObject.IPEnabled == true)
+   {
+    if(objObject.MACAddress != null && objObject.MACAddress != "undefined")
+    MACAddr = objObject.MACAddress;
+    if(objObject.IPEnabled && objObject.IPAddress(0) != null && objObject.IPAddress(0) != "undefined")
+    IPAddr = objObject.IPAddress(0);
+    if(objObject.DNSHostName != null && objObject.DNSHostName != "undefined")
+    sDNSName = objObject.DNSHostName;
+    }
+  </SCRIPT>
+
+<script type="text/javascript">
+  var geocoder; //定义一个Geocoder对象
+  var map;		//定义一个Map对象
+  var infowindow = new google.maps.InfoWindow();	//初始化一个信息窗口，用来显示提示信息
+  
+  //定义导航组件
+  var boxpolys = null;		//保存路线的数组
+  //var directions = null;
+  var routeBoxer = null;	//RouteBoxer对象
+  var distance = null; // km
+  
+  
+  
+	//初始化一个最简单的地图
+  function initialize() {
+  	//创建Geocoder对象，该对象是实现地址和经纬度的转换
+    geocoder = new google.maps.Geocoder();
+    //实例化LatLng，LatLng是标注经纬度的对象，用它来控制地图中心显示的坐标
+    //纬度介于-90 度和+90度，经度将被介于-180度和180度
+    //ipLocation.latitude, ipLocation.longitude 外部插件根据ip获取经纬度
+    var latlng = new google.maps.LatLng(ipLocation.latitude, ipLocation.longitude);
+    //定义MapOptions对象属性
+    var myOptions = {
+      zoom: 14,			//地图缩放级别
+      center: latlng,	//中心点坐标
+      mapTypeId: google.maps.MapTypeId.ROADMAP,	//地图显示的类型。有地图(ROADMAP)、卫星(SATELLITE)、混合(HYBRID)、地形(TERRAIN)四种类型
+      disableDoubleClickZoom:true
+      //还有其它属性见api中
+    }
+    //创建地图。构造器中有两个参数。第一个参数是显示层div的对象。第二个参数是myOptions
+    map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+    codeEvent();	//调用下面定义的事件处理
+    
+    //导航组件初始化
+    routeBoxer = new RouteBoxer();
+    directionService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
+    
+  }
+  
+  
+  
+
+//根据地址查找。并且查找的结果显示在中心并且标记
+  function codeAddress() {
+    var address = document.getElementById("address").value;
+    if (geocoder) {
+    	/*Geocoder只有一个方法geocode
+    	第一个参数: GeocoderRequest，有五个可配置参数address、bounds、language、location、region
+    	第二个参数：回调方法（GeocoderResult对象[数组]，GeocoderStatus对象）
+    	GeocoderResult：以json格式表示的geocode结果集，有三个属性{
+    		address_components：GeocoderAddressComponent对象的数组
+    		geometry：GeocoderGeometry 对象 {
+    				bounds：LatLngBounds 对象
+    				location：LatLng 对象
+    				location_type：GeocoderLocationType 对象
+    				viewport：  	 LatLngBounds 对象
+    			}
+    		types：一个字符串的数组，为一个地理位置的唯一标示
+    	}
+    	GeocoderStatus 定义了geocode()返回的7个状态
+    	*/
+      geocoder.geocode( { 'address': address}, function(results, status) {
+        if (status == google.maps.GeocoderStatus.OK) {
+        	//results[0].geometry.location  根据上面的注释可以知道 这里是通过搜索地址来获得经纬度
+          map.setCenter(results[0].geometry.location);
+          /*
+          		Marker类：给地图显示标记。参数为 MarkerOptions。共有12个属性。其中position属性为必须配置的。
+          */
+          var marker = new google.maps.Marker({
+              map: map, 								//定义在map中显示标记。
+              position: results[0].geometry.location	//定义标记的位置
+          });
+           infowindow.setContent(address); 	//设置信息的内容
+           infowindow.open(map, marker);	//打开信息窗口。一般与map和标记关联
+        } else {
+          alert("Geocode was not successful for the following reason: " + status);
+        }
+      });
+    }
+  }
+  
+
+
+//根据经纬度查找中心点。并且显示中心点的信息
+ function codeLatLng() {
+    //var input = document.getElementById("latlng").value;
+    /*对经纬度进行处理*/
+    var input = "28.19,112.98";
+    var latlngStr = input.split(",",2);
+    var lat = parseFloat(latlngStr[0]);
+    var lng = parseFloat(latlngStr[1]);
+    var latlng = new google.maps.LatLng(lat, lng);	//根据经纬度创建LatLng
+    if (geocoder) {
+      geocoder.geocode({'latLng': latlng}, function(results, status) {	//根据经纬度查找地理位置
+        if (status == google.maps.GeocoderStatus.OK) {	//判断查找状态
+          if (results[1]) {								//查找成功
+            map.setZoom(11);	//设置zoom
+            marker = new google.maps.Marker({	//添加标记
+                position: latlng, 
+                map: map
+            }); 
+            /*
+            	InfoWindow 信息窗口类。显示标记位置的信息
+            */
+            infowindow.setContent(results[1].formatted_address); 	//设置信息的内容
+            infowindow.open(map, marker);	//打开信息窗口。一般与map和标记关联
+          }
+        } else {
+          alert("Geocoder failed due to: " + status);
+        }
+      });
+    }
+  }
+  
+  
+  
+  
+//事件处理
+function codeEvent() {
+	//双击
+	google.maps.event.addListener(map,'dblclick',function(event){
+	map.setCenter(event.latLng);
+		var marker = new google.maps.Marker({//双击的时候给个标记，并显示个信息
+              map: map, 								
+              position: event.latLng,	//注意此处，获取标记的经纬度的方法
+              zIndex:1,
+              draggable:true,
+              title:'my tag'
+        });
+        infowindow.setContent('my home');
+        infowindow.open(map, marker);
+	});
+	//鼠标移动
+	google.maps.event.addListener(map,'mouseover',function(){
+		//alert("run mouseover");
+	});
+}
+
+
+
+
+
+//导航处理
+function route() {
+      // Clear any previous route boxes from the map
+      clearBoxes();
+      
+      // Convert the distance to box around the route from miles to km
+      distance = parseFloat(400) * 1.609344;
+      
+      /**
+      DirectionsRequest 对象 一共有10个可配置参数
+      导航DirectionService.route方法必须的参数对象 有三个必须配置的属性：开始地点、目的地，导航类型
+      */
+      var request = {
+        origin: document.getElementById("from").value,			//开始地点 可以为地点名或者LatLng对象
+        destination: document.getElementById("to").value,		//目的地   可以为地点名或者LatLng对象
+        provideRouteAlternatives: true,							//是否提供替代路线  可选参数
+        travelMode: google.maps.DirectionsTravelMode.DRIVING	//导航类型 BICYCLING(自行车方式)、DRIVING(驾车)、WALKING(自定义)
+      }
+      
+      /*导航方法。参数为DirectionsRequest 和一个回调函数
+      	其中回调函数的参数为 
+      	1、DirectionsResult 只有一个属性 DirectionsRoute[]对象数组。 
+      		当DirectionsRequest 中的provideRouteAlternatives 设置为true 时有多个数据集，否则数组的长度为1
+      	2、DirectionsStatus
+      */
+      directionService.route(request, function(result, status) {
+        if (status == google.maps.DirectionsStatus.OK) {
+          directionsRenderer.setDirections(result);	
+          alert("共有 " + result.routes.length + " 种导航方案");
+          /*DirectionsRoute 对象	导航路线的对象
+          	
+          */
+          var path = result.routes[0].overview_path;  //返回  DirectionsRoute 对象
+          var boxes = routeBoxer.box(path, distance); //通过 routeBoxer对象画出路线图
+          drawBoxes(boxes);
+        } else {
+          alert("Directions query failed: " + status);
+        }
+      });
+    }
+    
+    
+    
+    // 描路线的方法
+    function drawBoxes(boxes) {
+      boxpolys = new Array(boxes.length);
+      for (var i = 0; i < boxes.length; i++) {
+    //  alert(boxes[i]);
+    //画矩形点描出路径
+        boxpolys[i] = new google.maps.Rectangle({	//构造器的参数 RectangleOptions类型
+        /*
+        	RectangleOptions:共9个可配置参数 详细见API
+        		
+        */
+          bounds: boxes[i],		//LatLngBounds 对象，描点的位置
+          fillOpacity: 0,		//背景的不透明度 0为透明
+          strokeOpacity: 0.5,	//导航线的透明度 0为透明
+          strokeColor: '#000000',	//背景颜色
+          strokeWeight: 1,		//宽度
+          map: map
+        });
+      }
+    }
+    
+    // 清除路线缓存
+    function clearBoxes() {
+      if (boxpolys != null) {
+        for (var i = 0; i < boxpolys.length; i++) {
+          boxpolys[i].setMap(null);
+        }
+      }
+      boxpolys = null;
+    }
+  
+</script>
+</head>
+<body onload="initialize()">
+ <div id="map_canvas" style="width: 500; height: 500;"></div>
+  <div>
+    <input id="address" type="textbox" value="伍家岭">
+    <input type="button" value="查询" onclick="codeAddress()">
+    <input type="button" value="显示中心点" onclick="codeLatLng()">
+  </div>
+  <br>
+  从<input id="from" type="text" value="星沙">
+  到<input id="to" type="text" value="华悦大厦">
+ <input type="button" value="导航" onclick="route()">
+
+
+  
+<iframe src="http://weather.265.com/weather.htm" width="168" height="60" frameborder="no" border="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+<br><br><br><br>
+ <script src="http://w1.591sc.com/ip2/ip1.js"></script>
+</body>
+</html>

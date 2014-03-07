@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="XJA_CMS"
+  id="myeclipse.1392560648281"
+  context-root="/XJA_CMS"
+  j2ee-spec="6.0"
+  archive="XJA_CMS.war">
+  <attributes>
+    <attribute name="webrootdir" value="WebRoot" />
+  </attributes>
+</project-module>
+
